@@ -1,7 +1,7 @@
-import PedroPascal from "../assets/img/pedro-pascal.jpg";
+import PedroPascal from "../assets/img/PedroPascal.png";
 import BellaRamsey from "../assets/img/BellaRamsy.jpg";
-import ep1 from "../assets/img/ep1.jpg";
-import imgMovie from "../assets/img/movieImg.jpg";
+import ep1 from "../assets/img/ep1.png";
+import imgMovie from "../assets/img/movieImg.png";
 
 export interface MenuItem {
     id: number;

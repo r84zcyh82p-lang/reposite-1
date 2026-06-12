@@ -5,13 +5,19 @@ import { styles } from "../../styles/styles";
 import Box from '@mui/material/Box';
 import Slider from '@mui/material/Slider';
 import { FormControl, MenuItem, Select, type SelectChangeEvent } from "@mui/material";
-import React from "react";
+import React, { useState } from "react";
 
 export default function SerialSection() {
   const [season, setSeason] = React.useState('');
+  const [showShadow, setShowShadow] = useState(true);
 
   const handleChange = (event: SelectChangeEvent<string>) => {
     setSeason(event.target.value as string);
+  };
+
+  const handleSlideChange = () => {
+    setShowShadow(false);
+    setTimeout(() => setShowShadow(true), 300);
   };
   return (
     <div className={` ${styles.container} py-10`}>
@@ -43,7 +49,7 @@ export default function SerialSection() {
         </Box>
       </div>
       <div className="relative -mx-8 px-8 overflow-visible">
-        <Swiper navigation={true} modules={[Navigation]} className="mySwiper w-full" slidesPerView="auto" spaceBetween={24}>
+        <Swiper navigation={true} modules={[Navigation]} className="mySwiper w-full" slidesPerView="auto" spaceBetween={24} onSlideChange={handleSlideChange}>
           <SwiperSlide style={{ width: "auto" }}>
             <div className="flex gap-4 items-center">
               {
@@ -66,13 +72,13 @@ export default function SerialSection() {
                       </div>
                     </div>
                     <div className="">
-
                     </div>
                   </div>
                 ))
               }
             </div>
           </SwiperSlide>
+          <div className={`absolute right-0 bottom-0 z-10 w-41.75 h-64 top_cast_shadow_bg transition-opacity duration-300 ${showShadow ? 'opacity-100' : 'opacity-0'}`}></div>
         </Swiper>
       </div>
     </div>
