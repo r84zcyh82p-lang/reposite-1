@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+body {
+  background: #0D0C0F;
+}
+
+.header_shadow_bg {
+  background: linear-gradient(358.93deg, #0D0C0F 0.83%, rgba(13, 12, 15, 0.85) 28.55%, rgba(13, 12, 15, 0) 48.81%, rgba(13, 12, 15, 0.284314) 70.66%, #0D0C0F 103.18%);
+}
+
+.nav_shadow_bg {
+  background: linear-gradient(1000deg, #0D0C0F 0.83%, rgba(13, 12, 15, 0.85) 28.55%, rgba(13, 12, 15, 0) 48.81%, rgba(13, 12, 15, 0.284314) 70.66%, #0D0C0F 103.18%);
+}
+
+.top_cast_shadow_bg {
+  background: linear-gradient(269.96deg, #0D0C0F 18.88%, rgba(13, 12, 15, 0) 99.97%, #0D0C0F 99.97%);
+}
+
+.swiper-button-next, .swiper-button-prev {
+  width: 32px !important;
+  height: 32px !important;
+  background: #28262D;
+  border-radius: 50%;
+  z-index: 20000 !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+.swiper-button-next {
+  right: -40px !important;
+}
+
+.swiper-button-prev {
+  left: -40px !important;
+}
+
+
+.swiper-navigation-icon {
+  width: 20px !important;
+  height: 20px !important;
+  color: #F9F9F9;
+}
+
+.swiper-button-disabled {
+  display: none !important;
+}
