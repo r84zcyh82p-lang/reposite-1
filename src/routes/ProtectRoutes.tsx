@@ -1,9 +1,13 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet } from "react-router-dom";
 
+/**
+ * Protected route component
+ * Redirect to login if user is not authenticated
+ */
 export default function ProtectedRoutes() {
-    const isLogin = JSON.parse(localStorage.getItem('login')!)
+  const isAuthenticated = Boolean(
+    localStorage.getItem("authToken")
+  );
 
-    return (
-        isLogin ? <Outlet /> : <Navigate to='/prod' />
-    )
+  return isAuthenticated ? <Outlet /> : <Navigate to="/" />;
 }

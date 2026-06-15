@@ -1,8 +1,23 @@
-export const styles = {
-    container: 'w-[1290px] mx-auto',
-    form: 'w-[400px] p-6 bg-white rounded-lg shadow-md',    
-    title: 'text-2xl font-bold mb-4',
-    input: 'w-full p-2 mb-4 border border-gray-300 rounded',
-    button: 'w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600',
-    link: 'text-sm text-blue-500 hover:underline mt-4 block text-center',
-}
+/**
+ * Common Tailwind CSS class names and style constants
+ * Use these for consistent styling across components
+ */
+
+export const commonStyles = {
+  // Layout
+  container: "max-w-7xl mx-auto px-4",
+  
+  // Typography
+  headingLarge: "text-4xl font-bold",
+  headingMedium: "text-2xl font-bold",
+  headingSmall: "text-lg font-semibold",
+  
+  // Spacing
+  sectionPadding: "py-12 px-4",
+  
+  // Colors - add as needed
+  primaryColor: "bg-blue-600",
+  primaryHover: "hover:bg-blue-700",
+};
+
+export default commonStyles;
