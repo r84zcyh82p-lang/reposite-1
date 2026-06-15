@@ -1,0 +1,19 @@
+{
+  "transactions": [
+    {
+      "productName": "Сникерс",
+      "category": "food",
+      "price": 10000,
+      "date": "2026-06-15T12:52:47.137Z",
+      "id": "hnTs8Ol1qlA"
+    }
+  ],
+  "users": [
+    {
+      "id": "0",
+      "userName": "betmen",
+      "password": "pass123",
+      "balance": 990000
+    }
+  ]
+}

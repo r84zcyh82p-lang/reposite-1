@@ -1,9 +1,4 @@
-/**
- * Common Tailwind CSS class names and style constants
- * Use these for consistent styling across components
- */
-
-export const commonStyles = {
+export const styles = {
   // Layout
   container: "max-w-7xl mx-auto px-4",
   
@@ -19,5 +14,3 @@ export const commonStyles = {
   primaryColor: "bg-blue-600",
   primaryHover: "hover:bg-blue-700",
 };
-
-export default commonStyles;
