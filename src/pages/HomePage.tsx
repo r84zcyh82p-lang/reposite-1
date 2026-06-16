@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import Paper from '@mui/material/Paper'
+import TransactionForm from '../components/transactions/TransactionForm'
+import TransactionStats from '../components/transactions/TransactionStats'
+import TransactionTable from '../components/transactions/TransactionTable'
+import Message from '../components/transactions/Message'
 import { useProduct } from '../hooks/product'
 import productServices from '../services/product.api'
 import { categories, type Transaction } from '../constants/constants'
 
-interface qwerty1 {
+interface TransactionPayload {
   productName: string
   category: string
   price: number
@@ -26,7 +23,7 @@ export default function HomePage() {
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
-  const [tired] = useState("в чем то ошибка но я не скажу где")
+  const tired = "в чем то ошибка но я не скажу где"
   const [balance, setBalance] = useState<number | null>(null)
   const isSubmitLoading = submitLoading || productLoading
   const [formState, setFormState] = useState({
@@ -59,11 +56,6 @@ export default function HomePage() {
     loadTransactions()
   }, [])
 
-  const CategoryName = (categoryId: string) => {
-    const category = categories.find((item) => item.id === categoryId)
-    return category ? `${category.emoji} ${category.name}` : categoryId
-  }
-
   const filteredTransactions = filterCategory === 'all'
     ? transactions
     : transactions.filter((transaction) => transaction.category === filterCategory)
@@ -80,44 +72,47 @@ export default function HomePage() {
     setSubmitError(null)
     setSubmitSuccess(null)
 
-    const qwerty1: qwerty1 = {
+    const payload: TransactionPayload = {
       productName: formState.productName,
       category: formState.category,
       price: Number(formState.price),
       date: new Date().toISOString(),
     }
 
-    if (!qwerty1.productName || !qwerty1.category || Number.isNaN(qwerty1.price) || qwerty1.price <= 0) {
-      setSubmitError(tired)
-      setSubmitLoading(false)
-      return
-    }
-
-    if (balance !== null && balance - qwerty1.price < 0) {
-      setSubmitError('Недостаточно деняг')
+    if (balance !== null && balance - payload.price < 0) {
+      setSubmitError('не хватает деняг')
       setSubmitLoading(false)
       return
     }
 
     try {
-      const newTransaction = (await productUser({
-        productName: qwerty1.productName,
-        category: qwerty1.category,
-        price: String(qwerty1.price),
-        date: qwerty1.date,
-      })) as Transaction
+      await productUser({
+        productName: payload.productName,
+        category: payload.category,
+        price: payload.price.toString(),
+        date: payload.date,
+      })
+
+      const newTransaction: Transaction = {
+        id: String(Date.now()),
+        productName: payload.productName,
+        category: payload.category,
+        price: payload.price,
+        date: payload.date,
+      }
+
       const newBalance = balance !== null ? balance - newTransaction.price : null
-      
+
       if (newBalance !== null) {
         await productServices.updateUser(0, { balance: newBalance })
       }
-      
+
       setTransactions((prev) => [newTransaction, ...prev])
       setFormState({ productName: '', category: categories[0]?.id ?? 'food', price: '' })
       setBalance(newBalance)
-      setSubmitSuccess('Трата добавлена')
+      setSubmitSuccess(productSuccess ? 'Трата добавлена' : 'Данные отправлены')
     } catch {
-      setSubmitError(tired)
+      setSubmitError(productError ?? tired)
     } finally {
       setSubmitLoading(false)
     }
@@ -146,7 +141,7 @@ export default function HomePage() {
   }
 
   const handleDeleteAll = async () => {
-    if (!window.confirm('Вы уверены? Все транзакции будут удалены')) {
+    if (!window.confirm('Вы уверены? Все транзакции будут удалены.')) {
       return
     }
 
@@ -177,123 +172,31 @@ export default function HomePage() {
         <h1 className="text-3xl font-bold">Анализ затрат</h1>
       </div>
 
-      <h2 className='font-extrabold text-[30px] w-full text-center mt-10'>Добавить траты</h2>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          handleAddTransaction()
-        }}
-        className="flex justify-center"
-      >
-        <input
-          name="productName"
-          value={formState.productName}
-          onChange={handleInputChange}
-          placeholder="Название расхода"
-          className="border rounded p-3"
-          required
-        />
+      <TransactionForm
+        formState={formState}
+        onInputChange={handleInputChange}
+        onSubmit={handleAddTransaction}
+        isLoading={isSubmitLoading}
+      />
 
-        <select
-          name="category"
-          value={formState.category}
-          onChange={handleInputChange}
-          className="border rounded p-3"
-        >
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.emoji} {category.name}
-            </option>
-          ))}
-        </select>
-
-        <input
-          name="price"
-          value={formState.price}
-          onChange={handleInputChange}
-          type="number"
-          placeholder="Сумма"
-          className="border rounded p-3"
-          min="0"
-          required
-        />
-
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-3 rounded disabled:opacity-50"
-        disabled={isSubmitLoading}
-        >
-          Добавить расход
-        </button>
-
-      </form>
-
-      {submitSuccess && <p className="text-green-600 text-center font-semibold">{submitSuccess}</p>}
-      {submitError && <p className="text-red-600 text-center font-semibold">{submitError}</p>}
+      <Message success={submitSuccess} error={submitError || error} />
 
       {!loading && !error && (
         <>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="text-right text-xl font-semibold">Баланс: {balance !== null ? `$${balance}` : '...'}</div>
-            <div className="text-right text-xl font-semibold">Общая затрата: ${totalExpenses}</div>
-            <div className="flex items-center gap-3">
-              <label htmlFor="filter-category" className="font-medium">Фильтр по категории:</label>
-              <select
-                id="filter-category"
-                value={filterCategory}
-                onChange={(event) => setFilterCategory(event.target.value)}
-                className="border rounded p-2"
-              >
-                <option value="all">Все категории</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.emoji} {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="flex justify-center">
-            <button
-              onClick={handleDeleteAll}
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
-              disabled={deleteLoadingId === 'all' || transactions.length === 0}
-            >
-              Удалить все
-            </button>
-          </div>
-          <TableContainer component={Paper}>
-            <Table sx={{ minWidth: 650, marginX: 'auto', width: '80%', border: 1, marginY: 10 }} aria-label="transactions table">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Дата</TableCell>
-                  <TableCell>Категория</TableCell>
-                  <TableCell>Название</TableCell>
-                  <TableCell align="right">Сумма</TableCell>
-                  <TableCell align="center">Действие</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredTransactions.map((transaction) => (
-                  <TableRow key={transaction.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    <TableCell>{new Date(transaction.date).toLocaleDateString('ru-RU')}</TableCell>
-                    <TableCell>{CategoryName(transaction.category)}</TableCell>
-                    <TableCell>{transaction.productName}</TableCell>
-                    <TableCell align="right">${transaction.price}</TableCell>
-                    <TableCell align="center">
-                      <button
-                        type="button"
-                        className="bg-red-600 text-white px-2 py-1 rounded-2xl hover:bg-red-800"
-                        onClick={() => handleDeleteTransaction(transaction.id)}
-                      >
-                        удалить
-                      </button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <TransactionStats
+            balance={balance}
+            totalExpenses={totalExpenses}
+            filterCategory={filterCategory}
+            onFilterChange={setFilterCategory}
+            onDeleteAll={handleDeleteAll}
+            isDeleteLoading={deleteLoadingId === 'all'}
+            hasTransactions={transactions.length > 0}
+          />
+          <TransactionTable
+            transactions={filteredTransactions}
+            deleteLoadingId={deleteLoadingId}
+            onDelete={handleDeleteTransaction}
+          />
         </>
       )}
     </div>
