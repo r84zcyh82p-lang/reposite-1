@@ -16,8 +16,9 @@ export const useProduct = () => {
         setError(null)
 
         try {
-            await productServices.createProduct(userData)
+            const createdProduct = await productServices.createProduct(userData)
             setSuccess(true)
+            return createdProduct
         } catch (err) {
             const message = err instanceof Error ? err.message : "Ошибка сервера"
             setError(message)

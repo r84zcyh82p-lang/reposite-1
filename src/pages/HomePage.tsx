@@ -6,6 +6,8 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Paper from '@mui/material/Paper'
+import { useProduct } from '../hooks/product'
+import productServices from '../services/product.api'
 import { categories, type Transaction } from '../constants/constants'
 
 interface qwerty1 {
@@ -16,6 +18,7 @@ interface qwerty1 {
 }
 
 export default function HomePage() {
+  const { productUser, success: productSuccess, error: productError, loading: productLoading } = useProduct()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,8 +26,9 @@ export default function HomePage() {
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
-  const [tired, setTired] = useState("в чем то ошибка но я не скажу где")
+  const [tired] = useState("в чем то ошибка но я не скажу где")
   const [balance, setBalance] = useState<number | null>(null)
+  const isSubmitLoading = submitLoading || productLoading
   const [formState, setFormState] = useState({
     productName: '',
     category: categories[0]?.id ?? 'food',
@@ -38,16 +42,13 @@ export default function HomePage() {
       setError(null)
 
       try {
-        const [transactionsResponse, userResponse] = await Promise.all([
-          fetch('http://localhost:3000/transactions'),
-          fetch('http://localhost:3000/users/0'),
+        const [data, userData] = await Promise.all([
+          productServices.getTransactions() as Promise<Transaction[]>,
+          productServices.getUser(0) as Promise<{ balance: number }>,
         ])
 
-        const data = (await transactionsResponse.json()) as Transaction[]
-        const userData = await userResponse.json() as { balance: number }
-
-        setTransactions(data)
-        setBalance(userData.balance)
+        setTransactions(data ?? [])
+        setBalance(userData?.balance ?? null)
       } catch {
         setError(tired)
       } finally {
@@ -99,29 +100,16 @@ export default function HomePage() {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(qwerty1),
-      })
-
-      if (!response.ok) {
-        throw new Error()
-      }
-
-      const newTransaction = (await response.json()) as Transaction
+      const newTransaction = (await productUser({
+        productName: qwerty1.productName,
+        category: qwerty1.category,
+        price: String(qwerty1.price),
+        date: qwerty1.date,
+      })) as Transaction
       const newBalance = balance !== null ? balance - newTransaction.price : null
       
       if (newBalance !== null) {
-        await fetch('http://localhost:3000/users/0', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ balance: newBalance }),
-        })
+        await productServices.updateUser(0, { balance: newBalance })
       }
       
       setTransactions((prev) => [newTransaction, ...prev])
@@ -141,23 +129,11 @@ export default function HomePage() {
 
     try {
       const deletedTransaction = transactions.find((t) => t.id === transactionId)
-      const response = await fetch(`http://localhost:3000/transactions/${transactionId}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        throw new Error()
-      }
+      await productServices.deleteTransaction(transactionId)
 
       if (deletedTransaction && balance !== null) {
         const restoredBalance = balance + deletedTransaction.price
-        await fetch('http://localhost:3000/users/0', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ balance: restoredBalance }),
-        })
+        await productServices.updateUser(0, { balance: restoredBalance })
         setBalance(restoredBalance)
       }
 
@@ -170,7 +146,7 @@ export default function HomePage() {
   }
 
   const handleDeleteAll = async () => {
-    if (!window.confirm('Вы уверены? Все транзакции будут удалены.')) {
+    if (!window.confirm('Вы уверены? Все транзакции будут удалены')) {
       return
     }
 
@@ -179,19 +155,11 @@ export default function HomePage() {
 
     try {
       await Promise.all(
-        transactions.map((t) =>
-          fetch(`http://localhost:3000/transactions/${t.id}`, { method: 'DELETE' })
-        )
+        transactions.map((t) => productServices.deleteTransaction(t.id))
       )
 
-      const resetBalance = 1000000
-      await fetch('http://localhost:3000/users/0', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ balance: resetBalance }),
-      })
+      const resetBalance = 1000
+      await productServices.updateUser(0, { balance: resetBalance })
       setBalance(resetBalance)
 
       setTransactions([])
@@ -253,6 +221,7 @@ export default function HomePage() {
         <button
           type="submit"
           className="bg-blue-600 text-white px-4 py-3 rounded disabled:opacity-50"
+        disabled={isSubmitLoading}
         >
           Добавить расход
         </button>

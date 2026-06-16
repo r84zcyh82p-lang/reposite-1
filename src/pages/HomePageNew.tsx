@@ -3,6 +3,8 @@ import TransactionForm from '../components/transactions/TransactionForm'
 import TransactionStats from '../components/transactions/TransactionStats'
 import TransactionTable from '../components/transactions/TransactionTable'
 import Message from '../components/transactions/Message'
+import { useProduct } from '../hooks/product'
+import productServices from '../services/product.api'
 import { categories, type Transaction } from '../constants/constants'
 
 interface TransactionPayload {
@@ -13,6 +15,7 @@ interface TransactionPayload {
 }
 
 export default function HomePage() {
+  const { productUser, success: productSuccess, error: productError, loading: productLoading } = useProduct()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -20,8 +23,9 @@ export default function HomePage() {
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
-  const [tired, setTired] = useState("в чем то ошибка но я не скажу где")
+  const tired = "в чем то ошибка но я не скажу где"
   const [balance, setBalance] = useState<number | null>(null)
+  const isSubmitLoading = submitLoading || productLoading
   const [formState, setFormState] = useState({
     productName: '',
     category: categories[0]?.id ?? 'food',
@@ -35,16 +39,13 @@ export default function HomePage() {
       setError(null)
 
       try {
-        const [transactionsResponse, userResponse] = await Promise.all([
-          fetch('http://localhost:3000/transactions'),
-          fetch('http://localhost:3000/users/0'),
+        const [data, userData] = await Promise.all([
+          productServices.getTransactions() as Promise<Transaction[]>,
+          productServices.getUser(0) as Promise<{ balance: number }>,
         ])
 
-        const data = (await transactionsResponse.json()) as Transaction[]
-        const userData = await userResponse.json() as { balance: number }
-
-        setTransactions(data)
-        setBalance(userData.balance)
+        setTransactions(data ?? [])
+        setBalance(userData?.balance ?? null)
       } catch {
         setError(tired)
       } finally {
@@ -78,50 +79,40 @@ export default function HomePage() {
       date: new Date().toISOString(),
     }
 
-    if (!payload.productName || !payload.category || Number.isNaN(payload.price) || payload.price <= 0) {
-      setSubmitError(tired)
-      setSubmitLoading(false)
-      return
-    }
-
     if (balance !== null && balance - payload.price < 0) {
-      setSubmitError('Недостаточно средств')
+      setSubmitError('не хватает деняг')
       setSubmitLoading(false)
       return
     }
 
     try {
-      const response = await fetch('http://localhost:3000/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+      await productUser({
+        productName: payload.productName,
+        category: payload.category,
+        price: payload.price.toString(),
+        date: payload.date,
       })
 
-      if (!response.ok) {
-        throw new Error()
+      const newTransaction: Transaction = {
+        id: String(Date.now()),
+        productName: payload.productName,
+        category: payload.category,
+        price: payload.price,
+        date: payload.date,
       }
 
-      const newTransaction = (await response.json()) as Transaction
       const newBalance = balance !== null ? balance - newTransaction.price : null
-      
+
       if (newBalance !== null) {
-        await fetch('http://localhost:3000/users/0', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ balance: newBalance }),
-        })
+        await productServices.updateUser(0, { balance: newBalance })
       }
-      
+
       setTransactions((prev) => [newTransaction, ...prev])
       setFormState({ productName: '', category: categories[0]?.id ?? 'food', price: '' })
       setBalance(newBalance)
-      setSubmitSuccess('Трата добавлена')
+      setSubmitSuccess(productSuccess ? 'Трата добавлена' : 'Данные отправлены')
     } catch {
-      setSubmitError(tired)
+      setSubmitError(productError ?? tired)
     } finally {
       setSubmitLoading(false)
     }
@@ -133,23 +124,11 @@ export default function HomePage() {
 
     try {
       const deletedTransaction = transactions.find((t) => t.id === transactionId)
-      const response = await fetch(`http://localhost:3000/transactions/${transactionId}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        throw new Error()
-      }
+      await productServices.deleteTransaction(transactionId)
 
       if (deletedTransaction && balance !== null) {
         const restoredBalance = balance + deletedTransaction.price
-        await fetch('http://localhost:3000/users/0', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ balance: restoredBalance }),
-        })
+        await productServices.updateUser(0, { balance: restoredBalance })
         setBalance(restoredBalance)
       }
 
@@ -171,19 +150,11 @@ export default function HomePage() {
 
     try {
       await Promise.all(
-        transactions.map((t) =>
-          fetch(`http://localhost:3000/transactions/${t.id}`, { method: 'DELETE' })
-        )
+        transactions.map((t) => productServices.deleteTransaction(t.id))
       )
 
-      const resetBalance = 1000000
-      await fetch('http://localhost:3000/users/0', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ balance: resetBalance }),
-      })
+      const resetBalance = 1000
+      await productServices.updateUser(0, { balance: resetBalance })
       setBalance(resetBalance)
 
       setTransactions([])
@@ -205,7 +176,7 @@ export default function HomePage() {
         formState={formState}
         onInputChange={handleInputChange}
         onSubmit={handleAddTransaction}
-        isLoading={submitLoading}
+        isLoading={isSubmitLoading}
       />
 
       <Message success={submitSuccess} error={submitError || error} />

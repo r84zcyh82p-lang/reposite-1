@@ -7,7 +7,7 @@ class ProductServices {
 
     async request(url: string, method = "GET", body: unknown = null) {
         const headers = {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         const options: RequestInit = { method, headers }
@@ -22,11 +22,28 @@ class ProductServices {
             throw new Error(`Ошибка ${response.status}: ${response.statusText}`)
         }
 
-        return response.json()
+        const text = await response.text()
+        return text ? JSON.parse(text) : null
+    }
+
+    async getTransactions() {
+        return this.request(`${this.baseUrl}/transactions`)
+    }
+
+    async getUser(userId: string | number = 0) {
+        return this.request(`${this.baseUrl}/users/${userId}`)
+    }
+
+    async updateUser(userId: string | number, body: unknown) {
+        return this.request(`${this.baseUrl}/users/${userId}`, "PATCH", body)
+    }
+
+    async deleteTransaction(transactionId: string) {
+        return this.request(`${this.baseUrl}/transactions/${transactionId}`, "DELETE")
     }
 
     async createProduct(userData: Record<string, unknown>) {
-        return this.request(`${this.baseUrl}/products`, "POST", userData)
+        return this.request(`${this.baseUrl}/transactions`, "POST", userData)
     }
 }
 

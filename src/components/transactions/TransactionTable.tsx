@@ -13,7 +13,7 @@ interface TransactionTableProps {
   onDelete: (id: string) => void
 }
 
-export default function TransactionTable({ transactions, deleteLoadingId, onDelete }: TransactionTableProps) {
+export default function TransactionTable({ transactions, onDelete }: TransactionTableProps) {
   const getCategoryName = (categoryId: string) => {
     const category = categories.find((item) => item.id === categoryId)
     return category ? `${category.emoji} ${category.name}` : categoryId
@@ -47,7 +47,7 @@ export default function TransactionTable({ transactions, deleteLoadingId, onDele
                   className="bg-red-600 text-white px-2 py-1 rounded-2xl hover:bg-red-800"
                   onClick={() => onDelete(transaction.id)}
                 >
-                  {deleteLoadingId === transaction.id ? 'Удаление...' : 'Удалить'}
+                  Удалить
                 </button>
               </TableCell>
             </TableRow>
